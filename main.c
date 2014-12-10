@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <termios.h>
 #include "libusb/libusb/libusb.h"
 
 //Defines
@@ -245,6 +246,68 @@ void populateTurrets()
 	libusb_free_device_list(list, 1);
 }
 
+void ui()
+{
+	//Vars
+	char userInput[64];
+	int target = 0;
+
+	// Setting terminal to raw input
+	struct termios tio;
+	tcgetattr( 0, &tio );
+	tio.c_lflag &= ~ICANON;
+	tcsetattr( 0, TCSANOW, &tio );
+
+	// Reading user input
+	do
+	{
+		system("clear");
+		
+		// Displaying UI
+		system("clear");
+		printf("*-----------*\n");
+		printf("|     Z     |\n");
+		printf("|     +     |\n");
+		printf("|     |     |\n");
+		printf("|Q +-- --+ D|\n");
+		printf("|     |     |\n");
+		printf("|     +     |\n");
+		printf("|     S     |\n");
+		printf("*-----------*\n");
+		printf("\nFire : T\nExit : E\n");
+		printf("R: Next turret\nF: Previous turret\n");
+		printf("Tourette %d\n", target);
+
+		scanf("%c", userInput);
+		switch(userInput[0])
+		{
+			case 'z':
+				commandTurret(target, TOP_SIR);
+				break;
+			case 'd':
+				commandTurret(target, LEFT_SIR);
+				break;
+			case 'q':
+				commandTurret(target, RIGHT_SIR);
+				break;
+			case 's':
+				commandTurret(target, BOTTOM_SIR);
+				break;
+			case 't':
+				commandTurret(target, SHOOTHIMDOWN);
+				break;
+			case 'r':
+				target++;
+				break;
+			case 'f':
+				target--;
+				break;
+			default:
+				commandTurret(target, RESET_SIR);
+		}
+	}while(userInput[0]!='e');
+}
+
 int main(void)
 {
 	bool		stop = false;
@@ -362,6 +425,8 @@ int main(void)
 				stop = true;
 				printf("Have a nice day !\n");
 			}
+			else if(!strcmp(command, "ui"))
+				ui();
 			else
 			{
 				printf("Non !\nListe des commandes disponibles\n");
@@ -373,49 +438,7 @@ int main(void)
 
 	}
 
-//TODO
-/*
-Une fois les périphériques détectés, il faut tous les configurer.
-OK
-Ecrivez une fonction de configuration.
-OK
-Commencez par récupérer la première configuration de chaque périphérique, c'est à dire la configuration d'indice 0.
-OK
-La fonction libusb_get_config_descriptor qui permet cela nécessite un pointeur sur périphérique de type libusb_device *.
-OK
-Vous pouvez retrouver ce pointeur en fonction de la "poignée" par la fonction libusb_get_device.
-OK
-Faites afficher la valeur de cette configuration.
-OK
-Vous pouvez alors installer cette configuration comme configuration courante.
-
-Il vous reste ensuite, pour chaque périphérique, à réclamer toutes ses interfaces pour votre usage. Attention, la fonction libusb_claim_interface nécessite le numéro de l'interface et pas son indice. Vous allez donc parcourir la structure arborescente de description de configuration de chaque périphérique de la façon suivante :
-itérer sur le nombre d'interfaces ;
-explorer chaque sous-structure d'interface ;
-pour chaque interface, prendre la première alternative d'interface ;
-et enfin trouver le numéro d'interface.
-Affichez l'indice et le numéro de chaque interface détectée et réclamée.
-
-
-
-
-*/
 	libusb_exit(NULL);
 
 	return 0;
-}
-
-void ui()
-{
-	system("clear");
-	printf("*-----------*\n");
-	printf("|     Z     |\n");
-	printf("|     +     |\n");
-	printf("|     |     |\n");
-	printf("|Q +-- --+ D|\n");
-	printf("|     |     |\n");
-	printf("|     +     |\n");
-	printf("|     S     |\n");
-	printf("*-----------*\n");
-	printf("\nFire : SPACE\nExit : E\n");
 }
