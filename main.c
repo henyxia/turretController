@@ -405,3 +405,17 @@ Affichez l'indice et le numéro de chaque interface détectée et réclamée.
 	return 0;
 }
 
+void ui()
+{
+	system("clear");
+	printf("*-----------*\n");
+	printf("|     Z     |\n");
+	printf("|     +     |\n");
+	printf("|     |     |\n");
+	printf("|Q +-- --+ D|\n");
+	printf("|     |     |\n");
+	printf("|     +     |\n");
+	printf("|     S     |\n");
+	printf("*-----------*\n");
+	printf("\nFire : SPACE\nExit : E\n");
+}
