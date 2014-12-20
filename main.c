@@ -559,9 +559,8 @@ int main(void)
 			// Delete current char
 		}
 		else if(command == 127)
-		{
 			// Delete previous char
-		}
+			removeLastChar();
 		else if(command >= 65 && command <= 90)
 		{
 			// Add char with translation

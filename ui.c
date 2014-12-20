@@ -13,7 +13,7 @@ typedef line	log[MAX_LINE];
 
 // Global
 log		mLog;
-char	command[MAX_CHAR-1];
+char	command[MAX_CHAR-4];
 
 void displayHead(turret* myTurrets)
 {
@@ -83,6 +83,19 @@ void displayConsole()
 	fflush(stdout);
 }
 
+void removeLastChar()
+{
+	int i=0;
+	while(i<(MAX_CHAR-4) && command[i]!='\0')
+		i++;
+	if(i == 0)
+	{
+		// Bell
+	}
+	else
+		command[i-1]='\0';
+}
+
 void writeToLog(char* input)
 {
 	for(int i=MAX_LINE-1; i>1; i--)
@@ -93,7 +106,7 @@ void writeToLog(char* input)
 void writeConsole(char in)
 {
 	int i = 0;
-	while(i<(MAX_CHAR-1) && command[i]!='\0')
+	while(i<(MAX_CHAR-4) && command[i]!='\0')
 		i++;
 	if(i == MAX_CHAR)
 	{
