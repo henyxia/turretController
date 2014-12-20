@@ -4,19 +4,11 @@
 #include <string.h>
 #include <stdbool.h>
 #include <termios.h>
-#include "libusb/libusb/libusb.h"
+#include <unistd.h>
+#include "turret.h"
+#include "ui.h"
 
 //Defines
-#define	VENDOR_ID_1		0x0a81
-#define	PRODUCT_ID_1	0xff01
-#define	VENDOR_ID_2		0x0416
-#define	PRODUCT_ID_2	0x9391
-#define VENDOR_ID_3		0x1130
-#define	PRODUCT_ID_3	0x0202
-#define	TYPE_TENX		0
-#define	TYPE_WINBOND	1
-#define	TYPE_CHESEN		2
-#define	MAX_TOURETTE	4
 #define	REQUEST			0x09
 #define	REQUEST_TYPE	0x21
 #define	TIMEOUT			500
@@ -26,20 +18,20 @@
 #define	LEFT_SIR		0x04
 #define	RIGHT_SIR		0x08
 #define	SHOOTHIMDOWN	0x10
-
+/*
 //Typedef
 typedef struct
 {
 	libusb_device_handle*	handle;
 	int						type;
 }tourette;
-
+*/
 //Globals
-tourette	tourettes[MAX_TOURETTE];
-int			actual_fcking_tourette = 0;
+//tourette	tourettes[MAX_TOURETTE];
+//int			actual_fcking_tourette = 0;
 int			requestValue[3] = {0x0002, 0x0300, 0x0200};
 int			requestIndex[3] = {0x0001, 0x0000, 0x0000};
-
+/*
 int sendControlData(int target, int in_data)
 {
 		unsigned char data[1];
@@ -145,6 +137,36 @@ void commandTurret(int target, int cmd)
 	}
 	else if(tourettes[target].type == TYPE_TENX)
 	{
+		unsigned char datamain[8] = {'U', 'S', 'B', 'C', 0x00, 0x00, 0x08, 0x08};
+		unsigned char datamain1[8] = {'U', 'S', 'B', 'C', 0x00, 0x00, 0x04, 0x00};
+		unsigned char datamain2[8] = {'U', 'S', 'B', 'C', 0x00, 0x40, 0x02, 0x00};
+		unsigned char data[1];
+		int ret;
+
+		ret=libusb_control_transfer(tourettes[target].handle, REQUEST_TYPE, REQUEST,
+				requestValue[tourettes[target].type], requestIndex[tourettes[target].type], datamain1, 5, TIMEOUT);
+		if(ret<0)
+		{
+			printf("You should try sending data without error %d\n", ret);
+		}
+		printf("Success ! Amount of data sent : %d\n", ret);
+
+		ret=libusb_control_transfer(tourettes[target].handle, REQUEST_TYPE, REQUEST,
+				requestValue[tourettes[target].type], requestIndex[tourettes[target].type], datamain2, 5, TIMEOUT);
+		if(ret<0)
+		{
+			printf("You should try sending data without error %d\n", ret);
+		}
+		printf("Success ! Amount of data sent : %d\n", ret);
+
+		ret=libusb_control_transfer(tourettes[target].handle, REQUEST_TYPE, REQUEST,
+				requestValue[tourettes[target].type], requestIndex[tourettes[target].type], datamain, 5, TIMEOUT);
+		if(ret<0)
+		{
+			printf("You should try sending data without error %d\n", ret);
+		}
+		printf("Success ! Amount of data sent : %d\n", ret);
+
 	}
 	else
 		printf("Turret type not recognized\n");
@@ -245,7 +267,50 @@ void populateTurrets()
 
 	libusb_free_device_list(list, 1);
 }
+*/
+void initializeTurrets(turret* myTurrets)
+{
+	for(int i=0; i<MAX_TURRET; i++)
+	{
+		myTurrets[i].online = false;
+		myTurrets[i].type = TYPE_NONE;
+	}
+}
 
+char getch(){
+    /*#include <unistd.h>   //_getch*/
+    /*#include <termios.h>  //_getch*/
+    char buf=0;
+    struct termios old={0};
+    fflush(stdout);
+    if(tcgetattr(0, &old)<0)
+        perror("tcsetattr()");
+    old.c_lflag&=~ICANON;
+    old.c_lflag&=~ECHO;
+    old.c_cc[VMIN]=1;
+    old.c_cc[VTIME]=0;
+    if(tcsetattr(0, TCSANOW, &old)<0)
+        perror("tcsetattr ICANON");
+    if(read(0,&buf,1)<0)
+        perror("read()");
+    old.c_lflag|=ICANON;
+    old.c_lflag|=ECHO;
+    if(tcsetattr(0, TCSADRAIN, &old)<0)
+        perror ("tcsetattr ~ICANON");
+    printf("%c\n",buf);
+    return buf;
+ }
+
+void ui(turret* myTurrets)
+{
+	displayHead(myTurrets);
+	displayLog();
+	displayConsole();
+	//printf("\x1b[2A\x1b[3C");
+	//fflush(stdout);
+}
+
+/*
 void ui()
 {
 	//Vars
@@ -306,15 +371,54 @@ void ui()
 				commandTurret(target, RESET_SIR);
 		}
 	}while(userInput[0]!='e');
+}*/
+
+void mode_raw(int activer) 
+{ 
+    static struct termios cooked; 
+    static int raw_actif = 0; 
+  
+    if (raw_actif == activer) 
+        return; 
+  
+    if (activer) 
+    { 
+        struct termios raw; 
+  
+        tcgetattr(STDIN_FILENO, &cooked); 
+  
+        raw = cooked; 
+        cfmakeraw(&raw); 
+        tcsetattr(STDIN_FILENO, TCSANOW, &raw); 
+    } 
+    else 
+        tcsetattr(STDIN_FILENO, TCSANOW, &cooked); 
+  
+    raw_actif = activer; 
 }
 
 int main(void)
 {
 	bool		stop = false;
-	char		command[256];
+	char		command;
 	int			target = 0;
 	int			ret;
+	turret		myTurrets[MAX_TURRET];
 
+	initLog();
+/*
+	// Setting terminal to raw input
+	struct termios tio;
+	tcgetattr( 0, &tio );
+	tio.c_lflag &= ~ICANON;
+	tcsetattr( 0, TCSANOW, &tio );
+*/
+
+	//TODO
+	//Reset terminal at exit
+
+	initializeTurrets(myTurrets);
+/*
 	struct libusb_config_descriptor* dConfig = NULL;
 
 	ret = libusb_init(NULL);
@@ -439,6 +543,69 @@ int main(void)
 	}
 
 	libusb_exit(NULL);
+*/
+	do
+	{
+		ui(myTurrets);
+		// 27 91 65 Top
+		// 27 91 66 Bottom
+		// 126 DEL
+		// 127 BKSP
+		// 97 - 122 a-z
+		// 65 - 90 A-Z
+		command = getch();
+		if(command == 126)
+		{
+			// Delete current char
+		}
+		else if(command == 127)
+		{
+			// Delete previous char
+		}
+		else if(command >= 65 && command <= 90)
+		{
+			// Add char with translation
+		}
+		else if(command >= 97 && command <= 122)
+			// Add char
+			writeConsole(command);
+		else if(command == 27)
+		{
+			// Check for escape sequence
+			command = getch();
+			if(command == 91)
+			{
+				// Escape sequence confirmed
+				// Getting control
+				command = getch();
+				if(command == 65)
+				{
+					// History top
+				}
+				else if(command == 66)
+				{
+					// History bottom
+				}
+				else
+				{
+					// Bell
+				}
+			}
+			else
+			{
+				// Bell
+			}
+		}
+		else
+		{
+			// Bell
+		}
+		printf("\x1b[2J\x1b[H");
+		fflush(stdout);
+		//tmp(command[0], command[1], command[2], command[3]);
+		
+	}while(!stop);
+
 
 	return 0;
 }

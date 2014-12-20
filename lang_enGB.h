@@ -1,0 +1,6 @@
+#define	TURRET_OK		" TURRET STATUS OK "
+#define	TURRET_OFFLINE	" TURRET OFFLINE   "
+#define	TURRET_CHESEN	" [TYPE] CHESEN    "
+#define	TURRET_WINBOND	" [TYPE] WINBOND   "
+#define	TURRET_TENX		" [TYPE] TENX      "
+#define	TURRET_NONE		" [TYPE] NONE      "
