@@ -561,7 +561,10 @@ int main(void)
 			// Add char with translation
 			writeConsole(command + 32);
 		else if((command >= 97 && command <= 122) || command == 32)
-			// Add char
+			// Add char	or space
+			writeConsole(command);
+		else if((command >= 48 && command <= 57))
+			// Add number
 			writeConsole(command);
 		else if(command == 10)
 			// Send command
