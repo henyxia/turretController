@@ -2,7 +2,7 @@
 #Author	: Jean "henyxia" Wasilewski	
 
 CC=gcc
-CFLAGS=-c -Wall -std=c99 -g
+CFLAGS=-c -Wall -std=c99 -g -D_BSD_SOURCE
 SOURCES=main.c ui.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=turret_controller

@@ -554,20 +554,18 @@ int main(void)
 		// 97 - 122 a-z
 		// 65 - 90 A-Z
 		command = getch();
-		if(command == 126)
-		{
-			// Delete current char
-		}
-		else if(command == 127)
+		if(command == 127)
 			// Delete previous char
 			removeLastChar();
 		else if(command >= 65 && command <= 90)
-		{
 			// Add char with translation
-		}
-		else if(command >= 97 && command <= 122)
+			writeConsole(command + 32);
+		else if((command >= 97 && command <= 122) || command == 32)
 			// Add char
 			writeConsole(command);
+		else if(command == 10)
+			// Send command
+			sendCommand();
 		else if(command == 27)
 		{
 			// Check for escape sequence

@@ -50,12 +50,12 @@ void initLog()
 {
 	// Clearing the log
 	for(int i=0; i<MAX_LINE; i++)
-		for(int j=0; j<MAX_CHAR; j++)
-			mLog[i][j] = ' ';
+		for(int j=0; j<=MAX_CHAR; j++)
+			mLog[i][j] = '\0';
 
 	// Endind the log the right way
-	for(int i=0; i<MAX_LINE; i++)
-		mLog[i][MAX_CHAR] = '\0';
+	//for(int i=0; i<MAX_LINE; i++)
+	//	mLog[i][MAX_CHAR] = '\0';
 
 	// Initializing command
 	/*
@@ -71,7 +71,7 @@ void displayLog()
 {
 	for(int i=0; i<MAX_LINE; i++)
 	{
-		printf("|%s|\n", mLog[i]);
+		printf("|%s\x1b[%dG|\n", mLog[i], MAX_CHAR+2);
 	}
 }
 
@@ -98,9 +98,17 @@ void removeLastChar()
 
 void writeToLog(char* input)
 {
-	for(int i=MAX_LINE-1; i>1; i--)
-		for(int j=0; j<MAX_CHAR+1; j++)
-			mLog[i][j] = mLog[i-1][j];
+	for(int i=1; i<MAX_LINE; i++)
+		strcpy(mLog[i-1], mLog[i]);
+
+	strcpy(mLog[MAX_LINE-1], input);
+}
+
+void sendCommand()
+{
+	writeToLog(command);
+	command[0] = '\0';
+	//procedeCommand(command);
 }
 
 void writeConsole(char in)
