@@ -1,6 +1,7 @@
 // Includes
 #include "turret.h"
 #include "ui.h"
+#include "stopProgram.h"
 #include <string.h>
 
 // Define
@@ -127,6 +128,7 @@ void usage()
 	writeToLog("left N\t\tMake the turret N go to the left", false);
 	writeToLog("right N\tMake the turret N go to the right", false);
 	writeToLog("fire N\t\tMake the turret N fire", false);
+	writeToLog("exit\t\tExit this program", false);
 }
 
 void procedeCommand(char* cmd)
@@ -135,6 +137,8 @@ void procedeCommand(char* cmd)
 		initLog();
 	else if(strcmp(cmd, "help") == 0)
 		usage();
+	else if(strcmp(cmd, "exit") == 0)
+		stopProgram();
 	else
 	{
 		char	action[MAX_CHAR];

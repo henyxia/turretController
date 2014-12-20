@@ -31,6 +31,13 @@ typedef struct
 //int			actual_fcking_tourette = 0;
 int			requestValue[3] = {0x0002, 0x0300, 0x0200};
 int			requestIndex[3] = {0x0001, 0x0000, 0x0000};
+bool		stop = false;
+
+void stopProgram()
+{
+	stop = true;
+}
+
 /*
 int sendControlData(int target, int in_data)
 {
@@ -399,7 +406,6 @@ void mode_raw(int activer)
 
 int main(void)
 {
-	bool		stop = false;
 	char		command;
 	int			target = 0;
 	int			ret;
@@ -602,10 +608,7 @@ int main(void)
 		}
 		printf("\x1b[2J\x1b[H");
 		fflush(stdout);
-		//tmp(command[0], command[1], command[2], command[3]);
-		
 	}while(!stop);
-
 
 	return 0;
 }
