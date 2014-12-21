@@ -276,6 +276,7 @@ void populateTurrets()
 void ui(turret* myTurrets)
 {
 	displayHead(myTurrets);
+	displayArduinoConsole();
 	displayLog();
 	displayConsole();
 }
@@ -392,6 +393,8 @@ int main(void)
 	int			target = 0;
 	int			ret;
 	turret		myTurrets[MAX_TURRET];
+
+	init_serial();
 
 	initLog();
 

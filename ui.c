@@ -75,6 +75,20 @@ void displayHead(turret* myT)
 	printf(HEAD_SEPARATOR);
 }
 
+void displayArduinoConsole()
+{
+	printf("| \u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500");
+	printf("\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510");
+	printf("      Arduino Based Gamepad    RAW INPUT : %03d / 255  |\n", getData());
+	printf("| \u2502   \u2191          2   \u2502           %s", "DESACTIVATED");
+	printf("        TURRET SELECTED : NONE |\n");
+	printf("| \u2502 \u2190   \u2192      4   1 \u2502            ACTIVATED                                 |\n");
+	printf("| \u2502   \u2193          3   \u2502                                                      |\n");
+	printf("| \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518                                                      |\n");
+	printf("*-------------------------------------");
+	printf("--------------------------------------*\n");
+}
+
 void initLog()
 {
 	// Clearing the log

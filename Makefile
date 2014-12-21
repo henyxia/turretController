@@ -5,7 +5,7 @@ CC=gcc
 CFLAGS=-c -Wall -std=c99 -g -D_BSD_SOURCE
 #LIBS=./libusb/libusb/.libs/libusb-1.0.a
 LIBS=-lusb-1.0
-SOURCES=main.c ui.c turret.c
+SOURCES=main.c ui.c turret.c serial.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=turret_controller
 
