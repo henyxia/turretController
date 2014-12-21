@@ -6,7 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "libusb/libusb/libusb.h"
+//#include "libusb/libusb/libusb.h"
+#include <libusb-1.0/libusb.h>
 
 // Defines
 #define	VENDOR_ID_1		0x0a81
@@ -20,6 +21,17 @@
 #define	TYPE_WINBOND	2
 #define	TYPE_CHESEN		3
 #define	MAX_TURRET		4
+#define REQUEST         0x09
+#define REQUEST_TYPE    0x21
+#define TIMEOUT         500
+#define	T_NONE			0x00
+#define T_STOP			0x01
+#define T_TOP			0x02
+#define T_BOTTOM		0x04
+#define T_LEFT			0x08
+#define T_RIGHT			0x10
+#define T_FIRE			0x20
+
 
 // Typedef
 typedef struct
@@ -27,6 +39,11 @@ typedef struct
 	libusb_device_handle*	handle;
 	int						type;
 	bool					online;
+	int						cmd;
 }turret;
+
+// Prototypes
+bool	init	(turret*);
+bool	execute	(turret*,	int,	int);
 
 #endif

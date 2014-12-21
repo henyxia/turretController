@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <termios.h>
 #include <unistd.h>
-#include "turret.h"
 #include "ui.h"
 
 //Defines
@@ -275,18 +274,36 @@ void populateTurrets()
 	libusb_free_device_list(list, 1);
 }
 */
-void initializeTurrets(turret* myTurrets)
+
+void ui(turret* myTurrets)
+{
+	displayHead(myTurrets);
+	displayLog();
+	displayConsole();
+}
+
+int initializeTurrets(turret* myTurrets)
 {
 	for(int i=0; i<MAX_TURRET; i++)
 	{
 		myTurrets[i].online = false;
 		myTurrets[i].type = TYPE_NONE;
+		myTurrets[i].cmd = T_NONE;
 	}
+	
+	//ui(myTurrets);
+
+	if(!init(myTurrets))
+	{
+		printf("Initialization failed\n");
+		return -1;
+	}
+
+	return 0;
 }
 
-char getch(){
-    /*#include <unistd.h>   //_getch*/
-    /*#include <termios.h>  //_getch*/
+char getch()
+{
     char buf=0;
     struct termios old={0};
     fflush(stdout);
@@ -307,15 +324,6 @@ char getch(){
     printf("%c\n",buf);
     return buf;
  }
-
-void ui(turret* myTurrets)
-{
-	displayHead(myTurrets);
-	displayLog();
-	displayConsole();
-	//printf("\x1b[2A\x1b[3C");
-	//fflush(stdout);
-}
 
 /*
 void ui()
@@ -380,30 +388,6 @@ void ui()
 	}while(userInput[0]!='e');
 }*/
 
-void mode_raw(int activer) 
-{ 
-    static struct termios cooked; 
-    static int raw_actif = 0; 
-  
-    if (raw_actif == activer) 
-        return; 
-  
-    if (activer) 
-    { 
-        struct termios raw; 
-  
-        tcgetattr(STDIN_FILENO, &cooked); 
-  
-        raw = cooked; 
-        cfmakeraw(&raw); 
-        tcsetattr(STDIN_FILENO, TCSANOW, &raw); 
-    } 
-    else 
-        tcsetattr(STDIN_FILENO, TCSANOW, &cooked); 
-  
-    raw_actif = activer; 
-}
-
 int main(void)
 {
 	char		command;
@@ -412,18 +396,10 @@ int main(void)
 	turret		myTurrets[MAX_TURRET];
 
 	initLog();
-/*
-	// Setting terminal to raw input
-	struct termios tio;
-	tcgetattr( 0, &tio );
-	tio.c_lflag &= ~ICANON;
-	tcsetattr( 0, TCSANOW, &tio );
-*/
 
-	//TODO
-	//Reset terminal at exit
+	if(initializeTurrets(myTurrets) != 0)
+		return -1;
 
-	initializeTurrets(myTurrets);
 /*
 	struct libusb_config_descriptor* dConfig = NULL;
 
@@ -574,7 +550,7 @@ int main(void)
 			writeConsole(command);
 		else if(command == 10)
 			// Send command
-			sendCommand();
+			sendCommand(myTurrets);
 		else if(command == 27)
 		{
 			// Check for escape sequence

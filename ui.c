@@ -1,11 +1,9 @@
 // Includes
-#include "turret.h"
 #include "ui.h"
 #include "stopProgram.h"
 #include <string.h>
 
 // Define
-#define	MAX_CHAR	75
 #define	MAX_LINE	25
 
 // Typedef
@@ -16,17 +14,17 @@ typedef line	log[MAX_LINE];
 log		mLog;
 char	command[MAX_CHAR-4];
 
-void displayHead(turret* myTurrets)
+void displayHead(turret* myT)
 {
 	printf(HEAD_SEPARATOR);
 	printf("|");
 	//TODO use real constant
 	for(int i=0; i<4; i++)
- 		printf("%s|", myTurrets[i].online ? TURRET_OK : TURRET_OFFLINE);
+ 		printf("%s|", myT[i].online ? TURRET_OK : TURRET_OFFLINE);
 	printf("\n|");
 	for(int i=0; i<4; i++)
 	{
-		switch(myTurrets[i].type)
+		switch(myT[i].type)
 		{
 			case TYPE_WINBOND:
 				printf(TURRET_WINBOND);
@@ -45,7 +43,32 @@ void displayHead(turret* myTurrets)
 	printf("\n|");
 
 	for(int i=0; i<4; i++)
-		printf(" \u2190\u2191\u2193\u2192  Stop  Fire |");
+	{
+		if(myT[i].cmd == T_LEFT)
+			printf(" \x1b[7m\u2190\x1b[0m");
+		else
+			printf(" \u2190");
+		if(myT[i].cmd == T_TOP)
+			printf("\x1b[7m\u2191\x1b[0m");
+		else
+			printf("\u2191");
+		if(myT[i].cmd == T_BOTTOM)
+			printf("\x1b[7m\u2193\x1b[0m");
+		else
+			printf("\u2193");
+		if(myT[i].cmd == T_RIGHT)
+			printf("\x1b[7m\u2192\x1b[0m ");
+		else
+			printf("\u2192 ");
+		if(myT[i].cmd == T_STOP)
+			printf(" \x1b[7mStop\x1b[0m ");
+		else
+			printf(" Stop ");
+		if(myT[i].cmd == T_FIRE)
+			printf(" \x1b[7mFire\x1b[0m |");
+		else
+			printf(" Fire |");
+	}
 
 	printf("\n");
 
@@ -131,7 +154,7 @@ void usage()
 	writeToLog("exit\t\tExit this program", false);
 }
 
-void procedeCommand(char* cmd)
+void procedeCommand(turret* myT, char* cmd)
 {
 	if(strcmp(cmd, "clear") == 0)
 		initLog();
@@ -148,21 +171,27 @@ void procedeCommand(char* cmd)
 		{
 			if(strcmp(action, "top") == 0)
 			{
+				execute(myT, T_TOP, turret);
 			}
 			else if(strcmp(action, "bottom") == 0)
 			{
+				execute(myT, T_BOTTOM, turret);
 			}
 			else if(strcmp(action, "left") == 0)
 			{
+				execute(myT, T_LEFT, turret);
 			}
 			else if(strcmp(action, "right") == 0)
 			{
+				execute(myT, T_RIGHT, turret);
 			}
 			else if(strcmp(action, "stop") == 0)
 			{
+				execute(myT, T_STOP, turret);
 			}
 			else if(strcmp(action, "fire") == 0)
 			{
+				execute(myT, T_FIRE, turret);
 			}
 			else
 			{
@@ -178,10 +207,10 @@ void procedeCommand(char* cmd)
 	}
 }
 
-void sendCommand()
+void sendCommand(turret* myT)
 {
 	writeToLog(command, true);
-	procedeCommand(command);
+	procedeCommand(myT, command);
 	command[0] = '\0';
 }
 

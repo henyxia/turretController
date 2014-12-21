@@ -3,14 +3,16 @@
 
 CC=gcc
 CFLAGS=-c -Wall -std=c99 -g -D_BSD_SOURCE
-SOURCES=main.c ui.c
+#LIBS=./libusb/libusb/.libs/libusb-1.0.a
+LIBS=-lusb-1.0
+SOURCES=main.c ui.c turret.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=turret_controller
 
 all: $(SOURCES) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
-	$(CC) $(OBJECTS) -o $@
+	$(CC) $(OBJECTS) $(LIBS) -o $@
 
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
