@@ -28,8 +28,6 @@ typedef struct
 //Globals
 //tourette	tourettes[MAX_TOURETTE];
 //int			actual_fcking_tourette = 0;
-int			requestValue[3] = {0x0002, 0x0300, 0x0200};
-int			requestIndex[3] = {0x0001, 0x0000, 0x0000};
 bool		stop = false;
 
 void stopProgram()

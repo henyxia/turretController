@@ -1,7 +1,11 @@
 // Include
 #include "ui.h"
 
-// Global
+// Globals
+int         requestValue[3] = {0x0002, 0x0300, 0x0200};
+int         requestIndex[3] = {0x0001, 0x0000, 0x0000};
+
+// Functions
 bool init(turret* myT)
 {
 	char			tmp[MAX_CHAR];
@@ -75,8 +79,6 @@ bool init(turret* myT)
 
 	libusb_free_device_list(list, 1);
 
-	//libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_DEBUG);
-
 	for(int i=0; i<MAX_TURRET; i++)
 	{
 		if(myT[i].online)
@@ -91,22 +93,25 @@ bool init(turret* myT)
 			}
 			else
 			{
-				if(libusb_kernel_driver_active(myT->handle, 0) &&
-					(libusb_detach_kernel_driver(myT->handle, 0) != 0))
+				if(libusb_kernel_driver_active(myT->handle, 1) &&
+					(libusb_detach_kernel_driver(myT->handle, 1) != 0))
 				{
 					writeToLog("Unable to detach this device", false);
 					myT[i].online = false;
 				}
 				else
 				{
-					if(libusb_set_configuration(myT[i].handle,
-								dConfig->bConfigurationValue) != 0)
+					ret = libusb_set_configuration(myT[i].handle,
+								dConfig->bConfigurationValue);
+					if(ret != 0)
 					{
-						writeToLog("Configuration unavailable", false);
+						sprintf(tmp, "Configuration unavailable, error %d",
+							   ret);
+						writeToLog(tmp, false);	
 						myT[i].online = false;
 					}
 					else
-						if(libusb_claim_interface(myT[i].handle, 0) != 0)
+						if(libusb_claim_interface(myT[i].handle, 1) != 0)
 						{
 							writeToLog("Device not claimed", false);
 							myT[i].online = false;
@@ -119,6 +124,53 @@ bool init(turret* myT)
 	}
 
 	return true;
+}
+
+void recieveInterruptData(libusb_device_handle* handle)
+{
+	int				bytesIn = 0;
+	unsigned char	data[1] = {0xFF};
+	int				ret;
+	char			tmp[MAX_CHAR];
+
+	ret = libusb_interrupt_transfer(handle, 0x81, data, 0xFF, &bytesIn, TIMEOUT);
+	if(ret!=0)
+	{
+		sprintf(tmp, "Interruption failed with error code %d", ret);
+		writeToLog(tmp, false);
+	}
+	else
+	{
+		sprintf(tmp, "Interruption succeed ! Data recieved %d", data[0]);
+		writeToLog(tmp, false);
+	}
+}
+
+void sendControlData(libusb_device_handle* handle, int type, int len, int in0,
+		int in1, int in2, int in3, int in4, int in5, int in6, int in7)
+{
+	unsigned char	data[8];
+	int				ret;
+
+	if(len > 0)
+		data[0] = in0;
+	if(len > 1)
+		data[1] = in1;
+	if(len > 2)
+		data[2] = in2;
+	if(len > 3)
+		data[3] = in3;
+	if(len > 4)
+		data[4] = in4;
+	if(len > 5)
+		data[5] = in5;
+	if(len > 6)
+		data[6] = in6;
+	if(len > 7)
+		data[7] = in7;
+
+	libusb_control_transfer(handle, REQUEST_TYPE, REQUEST, requestValue[type-1],
+			requestIndex[type-1], data, len, TIMEOUT);
 }
 
 bool execute(turret* myT, int command, int turret)
@@ -135,7 +187,83 @@ bool execute(turret* myT, int command, int turret)
 		return false;
 	}
 
-	myT->cmd = command;
+	myT[turret].cmd = command;
+
+	if(myT[turret].type == TYPE_CHESEN)
+	{
+		sendControlData(myT[turret].handle, TYPE_CHESEN, 1, 0x40, 0, 0, 0, 0, 0, 0,
+						0);
+		recieveInterruptData(myT[turret].handle);
+		switch(command)
+		{
+			case T_TOP:
+				sendControlData(myT[turret].handle, TYPE_CHESEN, 1, 0x02, 0, 0, 0,
+						0, 0, 0, 0);
+				break;
+			case T_BOTTOM:
+				sendControlData(myT[turret].handle, TYPE_CHESEN, 1, 0x01, 0, 0, 0,
+						0, 0, 0, 0);
+				break;
+			case T_LEFT:
+				sendControlData(myT[turret].handle, TYPE_CHESEN, 1, 0x04, 0, 0, 0,
+						0, 0, 0, 0);
+				break;
+			case T_RIGHT:
+				sendControlData(myT[turret].handle, TYPE_CHESEN, 1, 0x08, 0, 0, 0,
+						0, 0, 0, 0);
+				break;
+			case T_FIRE:
+				sendControlData(myT[turret].handle, TYPE_CHESEN, 1, 0x10, 0, 0, 0,
+						0, 0, 0, 0);
+				break;
+			default:
+				sendControlData(myT[turret].handle, TYPE_CHESEN, 1, 0x00, 0, 0, 0,
+						0, 0, 0, 0);
+		}
+		sendControlData(myT[turret].handle, TYPE_CHESEN, 1, 0x40, 0, 0, 0, 0,
+				0, 0, 0);
+		recieveInterruptData(myT[turret].handle);
+	}
+	else if(myT[turret].type == TYPE_WINBOND)
+	{
+		sendControlData(myT[turret].handle, TYPE_WINBOND, 5, 0x5e, 0x00, 0x00,
+				0x00, 0x00, 0, 0, 0);
+		sendControlData(myT[turret].handle, TYPE_WINBOND, 5, 0x5e, 0x00, 0x00,
+				0x00, 0x00, 0, 0, 0);
+		sendControlData(myT[turret].handle, TYPE_WINBOND, 5, 0x5c, 0x00, 0x00,
+				0x00, 0x00, 0, 0, 0);
+		sendControlData(myT[turret].handle, TYPE_WINBOND, 5, 0x5c, 0x00, 0x00,
+				0x00, 0x00, 0, 0, 0);
+		sendControlData(myT[turret].handle, TYPE_WINBOND, 5, 0x5f,
+				( command == T_TOP ? 0x02 :
+				  ( command == T_BOTTOM ? 0x01 :
+					( command == T_LEFT ? 0x04 :
+					  ( command == T_RIGHT ? 0x08 :
+						( command == T_FIRE ? 0x10 : 0x00
+						)
+					  )
+					)
+				  )
+				), 0xe0, 0xff, 0xfe, 0, 0, 0);
+	}
+	else
+	{
+		for(int i=0; i<2; i++)
+		{
+		sendControlData(myT[turret].handle, TYPE_TENX, 8, 'U', 'S', 'B',
+				'C', 0x00, 0x00, 0x04, 0x00);
+		sendControlData(myT[turret].handle, TYPE_TENX, 8, 'U', 'S', 'B',
+				'C', 0x00, 0x40, 0x02, 0x00);
+		sendControlData(myT[turret].handle, TYPE_TENX, 8,  0x00,
+				command == T_LEFT ? 0x01 : 0x00,
+				command == T_RIGHT ? 0x01 : 0x00,
+				command == T_TOP ? 0x01 : 0x00,
+				command == T_BOTTOM ? 0x01 : 0x00,
+				command == T_FIRE ? 0x01 : 0x00,
+				0x08,
+				0x08);
+		}
+	}
 
 	return true;
 }
