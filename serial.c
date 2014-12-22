@@ -33,6 +33,7 @@ new.c_cc[VMIN]=1; /* blocking read until 1 char received */
 tcflush(fd, TCIFLUSH);
 tcsetattr(fd,TCSANOW,&new);
 serial_fd = fd;
+sleep(5);
 }
 
 // Close serial port
@@ -44,6 +45,7 @@ close(serial_fd);
 // Retrieve data
 unsigned char getData()
 {
+	write(serial_fd, "?", 1);
 	char buf;
 	if(read(serial_fd, &buf, 1) == 1)
 		return buf;

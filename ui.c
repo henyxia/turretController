@@ -75,11 +75,11 @@ void displayHead(turret* myT)
 	printf(HEAD_SEPARATOR);
 }
 
-void displayArduinoConsole()
+void displayArduinoConsole(unsigned char in)
 {
 	printf("| \u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500");
 	printf("\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510");
-	printf("      Arduino Based Gamepad    RAW INPUT : %03d / 255  |\n", getData());
+	printf("      Arduino Based Gamepad    RAW INPUT : %03d / 255  |\n", in);
 	printf("| \u2502   \u2191          2   \u2502           %s", "DESACTIVATED");
 	printf("        TURRET SELECTED : NONE |\n");
 	printf("| \u2502 \u2190   \u2192      4   1 \u2502            ACTIVATED                                 |\n");
@@ -184,29 +184,52 @@ void procedeCommand(turret* myT, char* cmd)
 		if(sscanf(cmd, "%s %d", action, &turret)==2)
 		{
 			if(strcmp(action, "top") == 0)
-			{
 				execute(myT, T_TOP, turret);
-			}
 			else if(strcmp(action, "bottom") == 0)
-			{
 				execute(myT, T_BOTTOM, turret);
-			}
 			else if(strcmp(action, "left") == 0)
-			{
 				execute(myT, T_LEFT, turret);
-			}
 			else if(strcmp(action, "right") == 0)
-			{
 				execute(myT, T_RIGHT, turret);
-			}
 			else if(strcmp(action, "stop") == 0)
-			{
 				execute(myT, T_STOP, turret);
-			}
 			else if(strcmp(action, "fire") == 0)
-			{
 				execute(myT, T_FIRE, turret);
-			}
+			else if(strcmp(action, "serial") == 0)
+				while(1)
+				{
+					unsigned char data = getData();
+					bool target[MAX_TURRET] = {false, false, false, false};
+
+					target[0] = (data & 0x01) == 0x01;
+					target[1] = (data & 0x02) == 0x02;
+					target[2] = (data & 0x04) == 0x04;
+					target[3] = (data & 0x08) == 0x08;
+
+					for(int i=0; i<MAX_TURRET; i++)
+						if(target[i])
+						{
+							if((data & 0x10) == 0x10)
+								execute(myT, T_FIRE, i);
+							else if((data & 0x60) == 0x20)
+								execute(myT, T_LEFT, i);
+							else if((data & 0x60) == 0x40)
+								execute(myT, T_RIGHT, i);
+							else if((data & 0x60) == 0x60)
+								execute(myT, T_BOTTOM, i);
+							else if((data & 0x80) == 0x80)
+								execute(myT, T_TOP, i);
+							else
+								execute(myT, T_STOP, i);
+						}
+
+					printf("\x1b[2J\x1b[H");
+					displayHead(myT);
+					displayArduinoConsole(data);
+					displayLog();
+					displayConsole();
+					usleep(50000);
+				}
 			else
 			{
 				writeToLog("Command not recognized", false);

@@ -276,7 +276,7 @@ void populateTurrets()
 void ui(turret* myTurrets)
 {
 	displayHead(myTurrets);
-	displayArduinoConsole();
+	displayArduinoConsole(getData());
 	displayLog();
 	displayConsole();
 }
