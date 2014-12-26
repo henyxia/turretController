@@ -8,7 +8,7 @@
 // Includes
 #include "frames.h"
 #include "lang_enGB.h"
-#include "turret.h"
+#include "serial.h"
 
 // Prototypes
 void	displayHead(turret*);
@@ -20,5 +20,6 @@ void	writeConsole(char);
 void	sendCommand(turret*);
 void	writeToLog(char*, bool);
 void	resetScreen();
+void	displayArduinoConsole(unsigned char);
 
 #endif

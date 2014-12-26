@@ -30,6 +30,9 @@
 #define T_LEFT			0x08
 #define T_RIGHT			0x10
 #define T_FIRE			0x20
+#define	STATUS_ERROR	-1
+#define	STATUS_OFFLINE	0
+#define	STATUS_ONLINE	1
 
 
 // Typedef
@@ -37,7 +40,7 @@ typedef struct
 {
 	libusb_device_handle*	handle;
 	int						type;
-	bool					online;
+	int						status;
 	int						cmd;
 }turret;
 

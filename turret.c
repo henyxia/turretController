@@ -43,7 +43,9 @@ bool init(turret* myT)
 	{
 		libusb_device *device = list[i];
 		ret = libusb_get_device_descriptor(device, &dDevice);
-		if((VENDOR_ID_1 == dDevice.idVendor && PRODUCT_ID_1 == dDevice.idProduct) || (VENDOR_ID_2 == dDevice.idVendor && PRODUCT_ID_2 == dDevice.idProduct) || (VENDOR_ID_3 == dDevice.idVendor && PRODUCT_ID_3 == dDevice.idProduct))
+		if((VENDOR_ID_1 == dDevice.idVendor && PRODUCT_ID_1 == dDevice.idProduct) ||
+				(VENDOR_ID_2 == dDevice.idVendor && PRODUCT_ID_2 == dDevice.idProduct) ||
+				(VENDOR_ID_3 == dDevice.idVendor && PRODUCT_ID_3 == dDevice.idProduct))
 		{
 			if(turretTarget>MAX_TURRET-1)
 			{
@@ -64,14 +66,14 @@ bool init(turret* myT)
 				}
 				else
 				{
-					myT->online = true;
-					turretTarget++;
+					myT[turretTarget].status = STATUS_ONLINE;
 					if(VENDOR_ID_1 == dDevice.idVendor)
-						myT->type = TYPE_CHESEN;
+						myT[turretTarget].type = TYPE_CHESEN;
 					else if(VENDOR_ID_2 == dDevice.idVendor)
-						myT->type = TYPE_WINBOND;
+						myT[turretTarget].type = TYPE_WINBOND;
 					else
-						myT->type = TYPE_TENX;
+						myT[turretTarget].type = TYPE_TENX;
+					turretTarget++;
 				}
 			}
 		}
@@ -81,15 +83,14 @@ bool init(turret* myT)
 
 	for(int i=0; i<MAX_TURRET; i++)
 	{
-		if(myT[i].online)
+		if(myT[i].status == STATUS_ONLINE)
 		{
 			ret = libusb_get_config_descriptor(libusb_get_device(
 						myT[i].handle), 0, &dConfig);
 			if(ret!=0)
 			{
 				writeToLog("Descriptor for this device unavailable", false);
-				//TODO NOT WORKING DEVICE
-				myT[i].online=false;
+				myT[i].status =	STATUS_ERROR;
 			}
 			else
 			{
@@ -97,7 +98,7 @@ bool init(turret* myT)
 					(libusb_detach_kernel_driver(myT->handle, 1) != 0))
 				{
 					writeToLog("Unable to detach this device", false);
-					myT[i].online = false;
+					myT[i].status = STATUS_ERROR;
 				}
 				else
 				{
@@ -108,16 +109,19 @@ bool init(turret* myT)
 						sprintf(tmp, "Configuration unavailable, error %d",
 							   ret);
 						writeToLog(tmp, false);	
-						myT[i].online = false;
+						myT[i].status = STATUS_ERROR;
 					}
 					else
 						if(libusb_claim_interface(myT[i].handle, 1) != 0)
 						{
 							writeToLog("Device not claimed", false);
-							myT[i].online = false;
+							myT[i].status = STATUS_ERROR;
 						}
 						else
-							writeToLog("Device ready", false);
+						{
+							sprintf(tmp, "Turret %d ready", i);
+							writeToLog(tmp, false);
+						}
 				}
 			}
 		}
@@ -181,7 +185,7 @@ bool execute(turret* myT, int command, int turret)
 		return false;
 	}
 
-	if(!myT[turret].online)
+	if(myT[turret].status != STATUS_ONLINE)
 	{
 		writeToLog("This turret is not online", false);
 		return false;

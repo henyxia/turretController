@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <termios.h>
 #include <unistd.h>
+#include "serial.h"
 #include "ui.h"
 
 //Defines
@@ -285,7 +286,7 @@ int initializeTurrets(turret* myTurrets)
 {
 	for(int i=0; i<MAX_TURRET; i++)
 	{
-		myTurrets[i].online = false;
+		myTurrets[i].status = STATUS_OFFLINE;
 		myTurrets[i].type = TYPE_NONE;
 		myTurrets[i].cmd = T_NONE;
 	}
@@ -324,74 +325,9 @@ char getch()
     return buf;
  }
 
-/*
-void ui()
-{
-	//Vars
-	char userInput[64];
-	int target = 0;
-
-	// Setting terminal to raw input
-	struct termios tio;
-	tcgetattr( 0, &tio );
-	tio.c_lflag &= ~ICANON;
-	tcsetattr( 0, TCSANOW, &tio );
-
-	// Reading user input
-	do
-	{
-		system("clear");
-		
-		// Displaying UI
-		system("clear");
-		printf("*-----------*\n");
-		printf("|     Z     |\n");
-		printf("|     +     |\n");
-		printf("|     |     |\n");
-		printf("|Q +-- --+ D|\n");
-		printf("|     |     |\n");
-		printf("|     +     |\n");
-		printf("|     S     |\n");
-		printf("*-----------*\n");
-		printf("\nFire : T\nExit : E\n");
-		printf("R: Next turret\nF: Previous turret\n");
-		printf("Tourette %d\n", target);
-
-		scanf("%c", userInput);
-		switch(userInput[0])
-		{
-			case 'z':
-				commandTurret(target, TOP_SIR);
-				break;
-			case 'd':
-				commandTurret(target, LEFT_SIR);
-				break;
-			case 'q':
-				commandTurret(target, RIGHT_SIR);
-				break;
-			case 's':
-				commandTurret(target, BOTTOM_SIR);
-				break;
-			case 't':
-				commandTurret(target, SHOOTHIMDOWN);
-				break;
-			case 'r':
-				target++;
-				break;
-			case 'f':
-				target--;
-				break;
-			default:
-				commandTurret(target, RESET_SIR);
-		}
-	}while(userInput[0]!='e');
-}*/
-
 int main(void)
 {
 	char		command;
-	int			target = 0;
-	int			ret;
 	turret		myTurrets[MAX_TURRET];
 
 	initLog();
@@ -399,132 +335,6 @@ int main(void)
 	if(initializeTurrets(myTurrets) != 0)
 		return -1;
 
-/*
-	struct libusb_config_descriptor* dConfig = NULL;
-
-	ret = libusb_init(NULL);
-	if(ret != 0)
-	{
-		printf("Error while initializing libusb, return : %d\n", ret);
-		return -1;
-	}
-
-	printf("Starting lsusb things ...\n");
-
-	populateTurrets();
-
-	libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_DEBUG);
-
-	printf("\nNext, configuration stuff !\n\n");
-
-	if(actual_fcking_tourette<1)
-	{
-		printf("WHERE IS THE F@CKING TOURETTE ?\n");
-		return -1;
-	}
-
-	for(int i=0; i<actual_fcking_tourette; i++)
-	{
-		ret = libusb_get_config_descriptor(libusb_get_device(
-					tourettes[i].handle), 0, &dConfig);
-		if(ret!=0)
-		{
-			printf("I definitely should'nt have a look inside that ...\n");
-			return -1;
-		}
-		
-		printf("Configuration value for the element %d: %d\n", i,
-				dConfig->bConfigurationValue);
-		
-		ret = libusb_detach_kernel_driver(tourettes[i].handle, 0);
-		
-		if(ret!=0)
-		{
-			printf("Device not detached, this will be complicated ...\n");
-			printf("Error code %d\n", ret);
-			printf("Maybe the device is already detached ?\n");
-		}
-		else
-			printf("Device successfully detached\n");
-
-		ret = libusb_set_configuration(tourettes[i].handle,
-				(int) dConfig->bConfigurationValue);
-		
-		if(ret!=0)
-		{
-			printf("You don't understand what you're manipulating uh ?\n");
-			printf("Error code %d\n", ret);
-			return -1;
-		}
-		
-		printf("Element %d now configured !\n", i);
-
-		ret = libusb_claim_interface(tourettes[i].handle, 0);
-
-		if(ret!=0)
-		{
-			printf("Claiming failed ... Maybe you're not so much powerfull\n");
-			printf("Error code %d\n", ret);
-			return -1;
-		}
-
-		while(!stop)
-		{
-			system("clear");
-			printf("Que voulez-vous faire ?\n");
-			fgets(command, 256, stdin);
-			sscanf(command, "%s\n", command);
-			printf("Commande recue : %s\n", command);
-			if(!strcmp(command, "left"))
-			{
-				printf("Going left\n");
-				commandTurret(target, LEFT_SIR);
-			}
-			else if(!strcmp(command, "right"))
-			{
-				printf("Going right\n");
-				commandTurret(target, RIGHT_SIR);
-			}
-			else if(!strcmp(command, "top"))
-			{
-				printf("Going top\n");
-				commandTurret(target, TOP_SIR);
-			}
-			else if(!strcmp(command, "bottom"))
-			{
-				printf("Going bottom\n");
-				commandTurret(target, BOTTOM_SIR);
-			}
-			else if(!strcmp(command, "reset"))
-			{
-				printf("Going to RESET\n");
-				commandTurret(target, RESET_SIR);
-			}
-			else if(!strcmp(command, "fire"))
-			{
-				printf("FIRE !!!!\n");
-				commandTurret(target, SHOOTHIMDOWN);
-			}
-			else if(!strcmp(command, "exit"))
-			{
-				stop = true;
-				printf("Have a nice day !\n");
-			}
-			else if(!strcmp(command, "ui"))
-				ui();
-			else
-			{
-				printf("Non !\nListe des commandes disponibles\n");
-				printf("\tleft\n\tright\n\ttop\n\tbottom\n\treset\n\treset\n");
-			}
-			printf("Appuyez sur ENTRER pour continuer\n");
-			fgets(command, 256, stdin);
-		}
-
-	}
-
-	libusb_exit(NULL);
-*/
 	do
 	{
 		ui(myTurrets);
@@ -568,19 +378,13 @@ int main(void)
 					// History bottom
 				}
 				else
-				{
-					// Bell
-				}
+					printf("\a");
 			}
 			else
-			{
-				// Bell
-			}
+				printf("\a");
 		}
 		else
-		{
-			// Bell
-		}
+			printf("\a");
 		printf("\x1b[2J\x1b[H");
 		fflush(stdout);
 	}while(!stop);

@@ -26,7 +26,7 @@ void displayHead(turret* myT)
 	printf("|");
 	//TODO use real constant
 	for(int i=0; i<4; i++)
- 		printf("%s|", myT[i].online ? TURRET_OK : TURRET_OFFLINE);
+ 		printf("%s|", myT[i].status == STATUS_ONLINE ? TURRET_OK : TURRET_OFFLINE);
 	printf("\n|");
 	for(int i=0; i<4; i++)
 	{
