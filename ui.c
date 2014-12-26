@@ -185,10 +185,11 @@ void procedeCommand(turret* myT, char* cmd)
 	else
 	{
 		char	action[MAX_CHAR];
-		bool	stop = false;
+		char	serialTarget[MAX_CHAR];
+		int		speed;
 		int		turret;
 
-		if(sscanf(cmd, "%s %d", action, &turret)==2)
+		if(sscanf(cmd, "%s %d", action, &turret) == 2)
 		{
 			if(strcmp(action, "top") == 0)
 				execute(myT, T_TOP, turret);
@@ -202,73 +203,29 @@ void procedeCommand(turret* myT, char* cmd)
 				execute(myT, T_STOP, turret);
 			else if(strcmp(action, "fire") == 0)
 				execute(myT, T_FIRE, turret);
-			else if(strcmp(action, "serial") == 0)
-			{
-				strcpy(command, "Press enter to stop serial reading");
-				while(!stop)
-				{
-					unsigned char	data = getData();
-					fd_set			events;
-					bool target[MAX_TURRET] = {false, false, false, false};
-					int				ret;
-					char			tmp[MAX_CHAR];
-
-					struct timeval mTimeout = {0, 50000};
-
-					target[0] = (data & 0x01) == 0x01;
-					target[1] = (data & 0x02) == 0x02;
-					target[2] = (data & 0x04) == 0x04;
-					target[3] = (data & 0x08) == 0x08;
-
-					for(int i=0; i<MAX_TURRET; i++)
-						if(target[i])
-						{
-							if((data & 0x10) == 0x10)
-								execute(myT, T_FIRE, i);
-							else if((data & 0x60) == 0x20)
-								execute(myT, T_LEFT, i);
-							else if((data & 0x60) == 0x40)
-								execute(myT, T_RIGHT, i);
-							else if((data & 0x60) == 0x60)
-								execute(myT, T_BOTTOM, i);
-							else if((data & 0x80) == 0x80)
-								execute(myT, T_TOP, i);
-							else
-								execute(myT, T_STOP, i);
-						}
-
-					FD_ZERO(&events);
-					FD_SET(STDIN_FILENO, &events);
-
-					ret = select(STDIN_FILENO + 1, &events, NULL, NULL, &mTimeout);
-					if(ret == -1)
-					{
-						sprintf(tmp, "Select not responding properly, error %d", errno);
-						writeToLog(tmp, false);
-					}
-					if(FD_ISSET(STDIN_FILENO, &events))
-					{
-						do
-						{
-							tmp[0] = getc(stdin);
-						}while(tmp[0] != '\n');
-						stop = true;
-					}
-
-					printf("\x1b[2J\x1b[H");
-					displayHead(myT);
-					displayArduinoConsole(data);
-					displayLog();
-					displayConsole();
-
-					//usleep(50000);
-				}
-			}
 			else
 			{
 				writeToLog("Command not recognized", false);
 				usage();
 			}
+		}
+		else if(sscanf(cmd, "%s", action) == 1)
+		{
+			if(strcmp(action, "serial") == 0)
+			{
+				strcpy(command, "Press enter to stop serial reading");
+				processSerial(myT, "/dev/ttyACM0", 9600);
+			}
+			else
+			{
+					writeToLog("Command not recognized", false);
+					usage();
+			}
+		}
+		else if(sscanf(cmd, "%s %s %d", action, serialTarget, &speed) == 3)
+		{
+			strcpy(command, "Press enter to stop serial reading");
+			processSerial(myT, serialTarget, speed);
 		}
 		else
 		{

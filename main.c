@@ -394,8 +394,6 @@ int main(void)
 	int			ret;
 	turret		myTurrets[MAX_TURRET];
 
-	init_serial();
-
 	initLog();
 
 	if(initializeTurrets(myTurrets) != 0)
@@ -541,10 +539,10 @@ int main(void)
 			// Delete previous char
 			removeLastChar();
 		else if(command >= 65 && command <= 90)
-			// Add char with translation
-			writeConsole(command + 32);
-		else if((command >= 97 && command <= 122) || command == 32)
-			// Add char	or space
+			// Add char
+			writeConsole(command);
+		else if((command >= 97 && command <= 122) || command == 32 || command == 47)
+			// Add char	or space or slash
 			writeConsole(command);
 		else if((command >= 48 && command <= 57))
 			// Add number
