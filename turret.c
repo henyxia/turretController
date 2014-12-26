@@ -94,13 +94,16 @@ bool init(turret* myT)
 			}
 			else
 			{
-				if(libusb_kernel_driver_active(myT->handle, 1) &&
-					(libusb_detach_kernel_driver(myT->handle, 1) != 0))
+				for(int j=0; j<dConfig->bNumInterfaces; j++)
 				{
-					writeToLog("Unable to detach this device", false);
-					myT[i].status = STATUS_ERROR;
+					if(libusb_kernel_driver_active(myT[i].handle, j) &&
+						(libusb_detach_kernel_driver(myT[i].handle, j) != 0))
+					{
+						writeToLog("Unable to detach this device", false);
+						myT[i].status = STATUS_ERROR;
+					}
 				}
-				else
+				if(myT[i].status == STATUS_ONLINE)
 				{
 					ret = libusb_set_configuration(myT[i].handle,
 								dConfig->bConfigurationValue);
@@ -111,15 +114,15 @@ bool init(turret* myT)
 						writeToLog(tmp, false);	
 						myT[i].status = STATUS_ERROR;
 					}
-					else
-						if(libusb_claim_interface(myT[i].handle, 1) != 0)
+					for(int j=0; j<dConfig->bNumInterfaces; j++)
+						if(libusb_claim_interface(myT[i].handle, j) != 0)
 						{
 							writeToLog("Device not claimed", false);
 							myT[i].status = STATUS_ERROR;
 						}
 						else
 						{
-							sprintf(tmp, "Turret %d ready", i);
+							sprintf(tmp, "Interface %d of turret %d ready", j, i);
 							writeToLog(tmp, false);
 						}
 				}
@@ -154,7 +157,6 @@ void sendControlData(libusb_device_handle* handle, int type, int len, int in0,
 		int in1, int in2, int in3, int in4, int in5, int in6, int in7)
 {
 	unsigned char	data[8];
-	int				ret;
 
 	if(len > 0)
 		data[0] = in0;
@@ -241,8 +243,8 @@ bool execute(turret* myT, int command, int turret)
 		sendControlData(myT[turret].handle, TYPE_WINBOND, 5, 0x5f,
 				( command == T_TOP ? 0x02 :
 				  ( command == T_BOTTOM ? 0x01 :
-					( command == T_LEFT ? 0x04 :
-					  ( command == T_RIGHT ? 0x08 :
+					( command == T_RIGHT ? 0x04 :
+					  ( command == T_LEFT ? 0x08 :
 						( command == T_FIRE ? 0x10 : 0x00
 						)
 					  )
