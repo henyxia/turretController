@@ -2,6 +2,8 @@
 #include "ui.h"
 #include "stopProgram.h"
 #include <string.h>
+#include <unistd.h>
+#include <errno.h>
 
 // Define
 #define	MAX_LINE	25
@@ -13,6 +15,10 @@ typedef line	log[MAX_LINE];
 // Global
 log		mLog;
 char	command[MAX_CHAR-4];
+
+void dummy()
+{
+}
 
 void displayHead(turret* myT)
 {
@@ -179,6 +185,7 @@ void procedeCommand(turret* myT, char* cmd)
 	else
 	{
 		char	action[MAX_CHAR];
+		bool	stop = false;
 		int		turret;
 
 		if(sscanf(cmd, "%s %d", action, &turret)==2)
@@ -196,10 +203,17 @@ void procedeCommand(turret* myT, char* cmd)
 			else if(strcmp(action, "fire") == 0)
 				execute(myT, T_FIRE, turret);
 			else if(strcmp(action, "serial") == 0)
-				while(1)
+			{
+				strcpy(command, "Press enter to stop serial reading");
+				while(!stop)
 				{
-					unsigned char data = getData();
+					unsigned char	data = getData();
+					fd_set			events;
 					bool target[MAX_TURRET] = {false, false, false, false};
+					int				ret;
+					char			tmp[MAX_CHAR];
+
+					struct timeval mTimeout = {0, 50000};
 
 					target[0] = (data & 0x01) == 0x01;
 					target[1] = (data & 0x02) == 0x02;
@@ -223,13 +237,33 @@ void procedeCommand(turret* myT, char* cmd)
 								execute(myT, T_STOP, i);
 						}
 
+					FD_ZERO(&events);
+					FD_SET(STDIN_FILENO, &events);
+
+					ret = select(STDIN_FILENO + 1, &events, NULL, NULL, &mTimeout);
+					if(ret == -1)
+					{
+						sprintf(tmp, "Select not responding properly, error %d", errno);
+						writeToLog(tmp, false);
+					}
+					if(FD_ISSET(STDIN_FILENO, &events))
+					{
+						do
+						{
+							tmp[0] = getc(stdin);
+						}while(tmp[0] != '\n');
+						stop = true;
+					}
+
 					printf("\x1b[2J\x1b[H");
 					displayHead(myT);
 					displayArduinoConsole(data);
 					displayLog();
 					displayConsole();
-					usleep(50000);
+
+					//usleep(50000);
 				}
+			}
 			else
 			{
 				writeToLog("Command not recognized", false);
