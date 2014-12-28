@@ -1,5 +1,5 @@
 // Includes
-#include "ui.h"
+#include "serial.h"
 #include "stopProgram.h"
 #include <string.h>
 #include <unistd.h>
@@ -86,9 +86,9 @@ void displayArduinoConsole(unsigned char in)
 	printf("| \u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500");
 	printf("\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510");
 	printf("      Arduino Based Gamepad    RAW INPUT : %03d / 255  |\n", in);
-	printf("| \u2502   \u2191          2   \u2502           %s", "DESACTIVATED");
+	printf("| \u2502   \u2191          2   \u2502                       ");
 	printf("        TURRET SELECTED : NONE |\n");
-	printf("| \u2502 \u2190   \u2192      4   1 \u2502            ACTIVATED                                 |\n");
+	printf("| \u2502 \u2190   \u2192      4   1 \u2502                                                      |\n");
 	printf("| \u2502   \u2193          3   \u2502                                                      |\n");
 	printf("| \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518                                                      |\n");
 	printf("*-------------------------------------");

@@ -6,7 +6,6 @@
 #include <termios.h>
 #include <unistd.h>
 #include "serial.h"
-#include "ui.h"
 
 //Defines
 #define	REQUEST			0x09
@@ -125,14 +124,6 @@ int main(void)
 			writeToLog("Select not responding properly", false);
 		if(FD_ISSET(STDIN_FILENO, &events))
 		{
-			/*
-			27 91 65 Top
-			27 91 66 Bottom
-			126 DEL
-			127 BKSP
-			97 - 122 a-z
-			65 - 90 A-Z
-			*/
 			command = getch();
 			if(command == 127)
 				// Delete previous char
@@ -185,6 +176,14 @@ int main(void)
     old.c_lflag|=ICANON;
     if(tcsetattr(0, TCSADRAIN, &old)<0)
         perror ("tcsetattr ~ICANON");
+
+	closeTurrets(myTurrets);
+
+	for(int i=0; i<MAX_TURRET; i++)
+		if(myTurrets[i].status == STATUS_ONLINE)
+			libusb_close(myTurrets[i].handle);
+
+	libusb_exit(NULL);
 
 	return 0;
 }

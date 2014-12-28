@@ -1,5 +1,5 @@
 // Include
-#include "ui.h"
+#include "serial.h"
 
 // Globals
 int         requestValue[3] = {0x0002, 0x0300, 0x0200};
@@ -9,8 +9,6 @@ int eventHotplug(libusb_context *ctx, libusb_device *device,
 		libusb_hotplug_event event, void *tmpT)
 {
 	turret*	myT;
-	char	tmp[MAX_CHAR];
-
 	myT = tmpT;
 
 	if(event == LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT)
@@ -20,6 +18,7 @@ int eventHotplug(libusb_context *ctx, libusb_device *device,
 			if(myT[i].status != STATUS_OFFLINE)
 				if(device == libusb_get_device(myT[i].handle))
 				{
+					libusb_close(myT[i].handle);
 					myT[i].status = STATUS_OFFLINE;
 					myT[i].type = TYPE_NONE;
 					myT[i].handle = NULL;
@@ -27,6 +26,7 @@ int eventHotplug(libusb_context *ctx, libusb_device *device,
 	}
 	else
 	{
+		char	tmp[MAX_CHAR];
 		writeToLog("An USB device has been plugged", false);
 		int i=0;
 		while(i<MAX_TURRET && myT[i].status == STATUS_ONLINE)
@@ -65,7 +65,6 @@ int eventHotplug(libusb_context *ctx, libusb_device *device,
 					else
 						myT[i].type = TYPE_TENX;
 
-
 					ret = libusb_get_config_descriptor(libusb_get_device(
 						myT[i].handle), 0, &dConfig);
 					if(ret!=0)
@@ -96,22 +95,24 @@ int eventHotplug(libusb_context *ctx, libusb_device *device,
 								myT[i].status = STATUS_ERROR;
 							}
 							for(int j=0; j<dConfig->bNumInterfaces; j++)
-							if(libusb_claim_interface(myT[i].handle, j) != 0)
-							{
-								writeToLog("Device not claimed", false);
-								myT[i].status = STATUS_ERROR;
-							}
-							else
-							{
-								sprintf(tmp, "Interface %d of turret %d ready", j, i);
-								writeToLog(tmp, false);
-							}
+								if(libusb_claim_interface(myT[i].handle, j) != 0)
+								{
+									writeToLog("Device not claimed", false);
+									myT[i].status = STATUS_ERROR;
+								}
+								else
+								{
+									sprintf(tmp, "Interface %d of turret %d ready", j, i);
+									writeToLog(tmp, false);
+								}
 						}
 					}
 				}
 			}
+			libusb_free_config_descriptor(dConfig);
 		}
 	}
+
 
 	return 0;
 }
@@ -265,6 +266,8 @@ bool init(turret* myT)
 		}
 	}
 
+	libusb_free_config_descriptor(dConfig);
+
 	initHotplug(myT);
 
 	return true;
@@ -409,4 +412,29 @@ bool execute(turret* myT, int command, int turret)
 	}
 
 	return true;
+}
+
+void closeTurrets(turret* myT)
+{
+	printf("Cleaning ...\n");
+	struct	libusb_config_descriptor* dConfig = NULL;
+	int		ret;
+
+	for(int i=0; i<MAX_TURRET; i++)
+		if(myT[i].status == STATUS_ONLINE)
+		{
+			ret = libusb_get_config_descriptor(libusb_get_device(
+						myT[i].handle), 0, &dConfig);
+			if(ret!=0)
+				printf("Unable to get configuration for the device %d\n", i);
+			else
+				if(myT[i].status == STATUS_ONLINE)
+					for(int j=0; j<dConfig->bNumInterfaces; j++)
+						if(libusb_release_interface(myT[i].handle, j) != 0)
+							printf("Device not released\n");
+						else
+							printf("Interface %d of turret %d safely disconnected\n", j, i);
+		}
+
+	libusb_free_config_descriptor(dConfig);
 }

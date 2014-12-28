@@ -45,7 +45,8 @@ typedef struct
 }turret;
 
 // Prototypes
-bool	init	(turret*);
-bool	execute	(turret*,	int,	int);
+bool	init			(turret*);
+bool	execute			(turret*,	int,	int);
+void	closeTurrets	(turret*);
 
 #endif
