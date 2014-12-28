@@ -5,6 +5,141 @@
 int         requestValue[3] = {0x0002, 0x0300, 0x0200};
 int         requestIndex[3] = {0x0001, 0x0000, 0x0000};
 
+int eventHotplug(libusb_context *ctx, libusb_device *device,
+		libusb_hotplug_event event, void *tmpT)
+{
+	turret*	myT;
+	char	tmp[MAX_CHAR];
+
+	myT = tmpT;
+
+	if(event == LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT)
+	{
+		writeToLog("An USB device has been removed", false);
+		for(int i=0; i<MAX_TURRET; i++)
+			if(myT[i].status != STATUS_OFFLINE)
+				if(device == libusb_get_device(myT[i].handle))
+				{
+					myT[i].status = STATUS_OFFLINE;
+					myT[i].type = TYPE_NONE;
+					myT[i].handle = NULL;
+				}
+	}
+	else
+	{
+		writeToLog("An USB device has been plugged", false);
+		int i=0;
+		while(i<MAX_TURRET && myT[i].status == STATUS_ONLINE)
+			i++;
+		if(i == MAX_TURRET)
+			writeToLog("Cannot handle more turrets", false);
+		else
+		{
+			struct	libusb_config_descriptor* dConfig = NULL;
+			struct	libusb_device_descriptor dDevice;
+			int		ret;
+
+			libusb_get_device_descriptor(device, &dDevice);
+			if((VENDOR_ID_1 == dDevice.idVendor && PRODUCT_ID_1 == dDevice.idProduct) ||
+				(VENDOR_ID_2 == dDevice.idVendor && PRODUCT_ID_2 == dDevice.idProduct) ||
+				(VENDOR_ID_3 == dDevice.idVendor && PRODUCT_ID_3 == dDevice.idProduct))
+			{
+				sprintf(tmp, "Bus %03d Device %03d: ID %04x:%04x",
+						libusb_get_bus_number(device),
+						libusb_get_device_address(device), dDevice.idVendor,
+						dDevice.idProduct);
+				writeToLog(tmp, false);
+				ret = libusb_open(device, &(myT[i].handle));
+				if(ret != 0)
+				{
+					sprintf(tmp, "Unable to open this device, error %d", ret);
+					writeToLog(tmp, false);
+				}
+				else
+				{
+					myT[i].status = STATUS_ONLINE;
+					if(VENDOR_ID_1 == dDevice.idVendor)
+						myT[i].type = TYPE_CHESEN;
+					else if(VENDOR_ID_2 == dDevice.idVendor)
+						myT[i].type = TYPE_WINBOND;
+					else
+						myT[i].type = TYPE_TENX;
+
+
+					ret = libusb_get_config_descriptor(libusb_get_device(
+						myT[i].handle), 0, &dConfig);
+					if(ret!=0)
+					{
+						writeToLog("Descriptor for this device unavailable", false);
+						myT[i].status =	STATUS_ERROR;
+					}
+					else
+					{
+						for(int j=0; j<dConfig->bNumInterfaces; j++)
+						{
+							if(libusb_kernel_driver_active(myT[i].handle, j) &&
+								(libusb_detach_kernel_driver(myT[i].handle, j) != 0))
+							{
+								writeToLog("Unable to detach this device", false);
+								myT[i].status = STATUS_ERROR;
+							}
+						}
+						if(myT[i].status == STATUS_ONLINE)
+						{
+							ret = libusb_set_configuration(myT[i].handle,
+										dConfig->bConfigurationValue);
+							if(ret != 0)
+							{
+								sprintf(tmp, "Configuration unavailable, error %d",
+									   ret);
+								writeToLog(tmp, false);	
+								myT[i].status = STATUS_ERROR;
+							}
+							for(int j=0; j<dConfig->bNumInterfaces; j++)
+							if(libusb_claim_interface(myT[i].handle, j) != 0)
+							{
+								writeToLog("Device not claimed", false);
+								myT[i].status = STATUS_ERROR;
+							}
+							else
+							{
+								sprintf(tmp, "Interface %d of turret %d ready", j, i);
+								writeToLog(tmp, false);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+void initHotplug(turret* myT)
+{
+	struct timeval tv = {0, 0};
+	int ret;
+	ret = libusb_handle_events_timeout_completed(NULL, &tv, NULL);
+	if(ret != LIBUSB_SUCCESS)
+		writeToLog("Handle events failed", false);
+	if(libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG))
+	{
+		ret = libusb_hotplug_register_callback(NULL,
+				LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
+				LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT, 0,
+				LIBUSB_HOTPLUG_MATCH_ANY, LIBUSB_HOTPLUG_MATCH_ANY,
+				LIBUSB_HOTPLUG_MATCH_ANY, eventHotplug, myT, NULL);
+		if(ret != LIBUSB_SUCCESS)
+			writeToLog("New device callback register failed", false);
+		else
+			writeToLog("New device callback register succeed", false);
+	}
+	else
+		writeToLog("This version of libusb on this OS doesn't support hotplug",
+				false);
+}
+
 // Functions
 bool init(turret* myT)
 {
@@ -129,6 +264,8 @@ bool init(turret* myT)
 			}
 		}
 	}
+
+	initHotplug(myT);
 
 	return true;
 }
