@@ -171,6 +171,9 @@ void usage()
 	writeToLog("left N\t\tMake the turret N go to the left", false);
 	writeToLog("right N\tMake the turret N go to the right", false);
 	writeToLog("fire N\t\tMake the turret N fire", false);
+	writeToLog("serial N M\tControl turrets from serial N at M bauds", false);
+	writeToLog("serial\t\tControl turrets from /dev/ttyACM0 at 9600 bauds",
+			false);
 	writeToLog("exit\t\tExit this program", false);
 }
 
